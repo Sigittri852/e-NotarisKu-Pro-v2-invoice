@@ -1,0 +1,1 @@
+"use client";import {useRouter} from "next/navigation";export default function DeleteButton({id}:{id:string}){const r=useRouter();return <button className="btn btn-danger no-print" onClick={async()=>{if(confirm('Hapus data akta ini?')){await fetch(`/api/akta?id=${id}`,{method:'DELETE'});r.push('/akta');r.refresh()}}}>Hapus</button>}

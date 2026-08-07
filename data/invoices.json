@@ -1,0 +1,71 @@
+[
+  {
+    "id": "18b77759-2d50-4368-a8c3-9811f7de6788",
+    "nomor": "INV-202608-0002",
+    "tanggal": "2026-08-07",
+    "jatuhTempo": "2026-08-14",
+    "aktaId": "2168f19b-7aba-40d6-813e-98d86bb54d79",
+    "nomorAkta": "01/ 4 /2026",
+    "jenisAkta": "Akta Pembagian Hak Bersama",
+    "kategori": "PPAT",
+    "namaNotaris": "Apriani Sitorus,SH.,MKn.",
+    "pelanggan": " Tuan Aman",
+    "alamat": "Jl Suka Maju No 100 Jakarta Selatan",
+    "nik": "3298990991990099",
+    "items": [
+      {
+        "description": "Jasa / biaya tambahan",
+        "qty": 1,
+        "price": 3000000
+      },
+      {
+        "description": "Jasa / biaya tambahan",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "nilaiTransaksi": 2500000000,
+    "njop": 800000,
+    "sspPph": 700000,
+    "sspdBphtb": 200000,
+    "diskon": 0,
+    "ppnPersen": 11,
+    "ppn": 429000,
+    "status": "Belum Lunas",
+    "catatan": "Pembayaran sesuai tagihan.",
+    "metodePembayaran": "Transfer Bank",
+    "createdAt": "2026-08-07T16:53:05.135Z"
+  },
+  {
+    "id": "d9d80e0e-808a-45ed-813b-c69524c8566c",
+    "nomor": "INV-202608-0001",
+    "tanggal": "2026-08-07",
+    "jatuhTempo": "2026-08-14",
+    "aktaId": "2ce353d2-1f39-4232-89a5-ff13ee2d8b12",
+    "nomorAkta": "001/NOT/VII/2026",
+    "jenisAkta": "Akta Pengikatan Jual Beli",
+    "kategori": "NOTARIS",
+    "namaNotaris": "Apriani Sitorus,SH.,MKn.",
+    "pelanggan": " Tuan Setiawan",
+    "alamat": "Jl Suka Maju No 99 Jakarta Selatan",
+    "nik": "3217890916780899",
+    "items": [
+      {
+        "description": "Honorarium Akta Pengikatan Jual Beli No. 001/NOT/VII/2026",
+        "qty": 1,
+        "price": 3000000
+      }
+    ],
+    "nilaiTransaksi": 1500000000,
+    "njop": 800000,
+    "sspPph": 300000,
+    "sspdBphtb": 200000,
+    "diskon": 0,
+    "ppnPersen": 11,
+    "ppn": 385000,
+    "status": "Lunas",
+    "catatan": "Pembayaran sesuai tagihan.",
+    "metodePembayaran": "Transfer Bank",
+    "createdAt": "2026-08-07T16:57:35.633Z"
+  }
+]

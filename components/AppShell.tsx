@@ -1,0 +1,1 @@
+import Sidebar from './Sidebar';import LiveClock from './LiveClock';export default function AppShell({children}:{children:React.ReactNode}){return <div className="shell"><Sidebar/><main className="main"><header className="topbar"><div><b>e-NotarisKu Pro v2.0</b><span>Sistem Administrasi Akta Notaris & PPAT</span></div><LiveClock/></header>{children}</main></div>}

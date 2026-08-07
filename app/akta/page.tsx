@@ -1,0 +1,2 @@
+import Link from "next/link";import AppShell from "@/components/AppShell";import AktaTable from "@/components/AktaTable";import {listAkta} from "@/lib/store";
+export const dynamic="force-dynamic";export default async function Page(){const data=await listAkta();return <AppShell><section className="hero"><div><h1>Daftar Akta Registrasi</h1><div>Manajemen data arsip, lacak berkas digital, Notaris, dan PPAT.</div></div><Link className="btn btn-light" href="/akta/baru">+ Buat Akta Baru</Link></section><AktaTable data={data}/></AppShell>}

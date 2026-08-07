@@ -1,0 +1,1 @@
+import AppShell from "@/components/AppShell";import AktaForm from "@/components/AktaForm";export default function Page(){return <AppShell><section className="hero"><div><h1>Input Akta Baru</h1><div>Masukkan data akta Notaris atau PPAT dan unggah dokumen pendukung.</div></div></section><AktaForm/></AppShell>}
