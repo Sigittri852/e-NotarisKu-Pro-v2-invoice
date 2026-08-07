@@ -5,3 +5,5 @@ public/uploads/*
 !public/uploads/.gitkeep
 .env
 *.tsbuildinfo
+prisma/*.db
+prisma/*.db-*

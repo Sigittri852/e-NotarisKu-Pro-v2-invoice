@@ -42,7 +42,7 @@ export default function InvoiceForm({ akta, invoice }: { akta?: Akta; invoice?: 
   const ppnNominal = useMemo(()=>invoicePpn({items, sspPph, sspdBphtb, ppnPersen, ppn: ppnLegacy}),[items, sspPph, sspdBphtb, ppnPersen, ppnLegacy]);
   const total = useMemo(()=>invoiceTotal({items, sspPph, sspdBphtb, diskon, ppn: ppnLegacy, ppnPersen}),[items, sspPph, sspdBphtb, diskon, ppnPersen, ppnLegacy]);
 
-  async function ensureNumber(){ if(nomor) return nomor; const r=await fetch('/api/invoices/next-number'); const j=await r.json(); setNomor(j.nomor); return j.nomor; }
+  async function ensureNumber(){ if(nomor) return nomor; const r=await fetch('/api/invoices/next-number',{cache:'no-store'}); const text=await r.text(); let j:any; try{j=JSON.parse(text)}catch{throw new Error('API nomor invoice mengembalikan respons tidak valid: '+text.slice(0,200))} if(!r.ok || !j.nomor) throw new Error(j.error || 'Gagal mengambil nomor invoice'); setNomor(j.nomor); return j.nomor; }
   function updateItem(i:number, key:keyof InvoiceItem, value:string){setItems(v=>v.map((x,idx)=>idx===i?{...x,[key]:key==='description'?value:Number(value)}:x));}
   async function save(){
     setSaving(true);setError("");
@@ -56,7 +56,7 @@ export default function InvoiceForm({ akta, invoice }: { akta?: Akta; invoice?: 
         status,metodePembayaran,catatan
       };
       const r=await fetch('/api/invoices'+(invoice?.id?`?id=${invoice.id}`:''),{method:invoice?.id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-      const j=await r.json(); if(!r.ok) throw new Error(j.error||'Gagal menyimpan invoice');
+      const text=await r.text(); let j:any; try{j=JSON.parse(text)}catch{throw new Error('API invoice mengembalikan respons tidak valid: '+text.slice(0,300))} if(!r.ok) throw new Error(j.error||'Gagal menyimpan invoice');
       window.location.href=`/invoice/${j.id}`;
     }catch(e:any){setError(e.message||'Gagal menyimpan invoice');setSaving(false)}
   }
@@ -101,3 +101,5 @@ export default function InvoiceForm({ akta, invoice }: { akta?: Akta; invoice?: 
     <div className="actions"><button className="btn btn-primary" type="button" disabled={saving} onClick={save}>{saving?'Menyimpan...':'Simpan Invoice / Tagihan'}</button><a className="btn" href={akta?`/akta/${akta.id}`:'/invoice'}>Batal</a>{invoice?.id&&<InvoiceDeleteButton id={invoice.id} nomor={invoice.nomor} redirectTo="/invoice"/>}</div>
   </div>
 }
+
+
