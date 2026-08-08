@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -36,4 +36,37 @@ model Akta {
   dokumenJson     String    @default("[]")
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+}
+
+model Invoice {
+  id             String   @id @default(cuid())
+  nomor          String   @unique
+  tanggal        String
+  jatuhTempo     String
+  aktaId         String?
+  nomorAkta      String?
+  jenisAkta      String?
+  kategori       String?
+  namaNotaris    String?
+  pelanggan      String
+  alamat         String?
+  nik            String?
+
+  items          String   @default("[]")
+
+  nilaiTransaksi Float    @default(0)
+  njop           Float    @default(0)
+  sspPph         Float    @default(0)
+  sspdBphtb      Float    @default(0)
+
+  diskon         Float    @default(0)
+  ppnPersen      Float    @default(0)
+  ppn            Float    @default(0)
+
+  status         String   @default("Belum Lunas")
+  catatan        String?
+  metodePembayaran String?
+
+  createdAt      String
+  updatedAt      DateTime @updatedAt
 }
