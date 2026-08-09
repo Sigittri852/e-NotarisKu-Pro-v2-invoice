@@ -1,5 +1,44 @@
 [
   {
+    "id": "c2ac9706-2115-4432-b281-312ecc130e80",
+    "nomorAkta": "01/ 4 /2026",
+    "tanggal": "2026-08-09",
+    "kategori": "NOTARIS",
+    "jenisAkta": "Akta Pengikatan Jual Beli",
+    "namaNotaris": "A",
+    "pihak": [
+      {
+        "nama": "1",
+        "nik": "1",
+        "npwp": "1",
+        "scanIdentitas": []
+      }
+    ],
+    "namaPihak": "1",
+    "nik": "1",
+    "npwp": "1",
+    "alamat": "jl",
+    "nomorSertifikat": "1",
+    "jenisHak": "SHM",
+    "luasTanah": "10",
+    "nilaiTransaksi": 10,
+    "nopPbb": "",
+    "njop": 10,
+    "tanggalSsp": "2026-08-09",
+    "sspPph": 10,
+    "tanggalBphtb": "2026-08-09",
+    "bphtb": 10,
+    "honorarium": 200,
+    "status": "Selesai",
+    "catatan": "",
+    "detail": {},
+    "dokumen": [],
+    "fotoTtdKlien": [],
+    "fotoTtdNotaris": [],
+    "minuta": [],
+    "tandaTanganDigital": []
+  },
+  {
     "id": "2168f19b-7aba-40d6-813e-98d86bb54d79",
     "nomorAkta": "01/ 4 /2026",
     "tanggal": "2026-08-07",
