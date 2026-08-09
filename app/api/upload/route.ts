@@ -1,18 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
+import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
+const MAX_SIZE = 25 * 1024 * 1024;
 
-const ALLOWED_TYPES = new Set([
+const ALLOWED_TYPES = [
   "image/jpeg",
   "image/png",
   "image/webp",
-  "image/heic",
-  "image/heif",
   "application/pdf",
   "application/zip",
   "application/x-zip-compressed",
@@ -20,78 +18,77 @@ const ALLOWED_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/vnd.ms-excel",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-]);
+];
 
-function safeFileName(name: string) {
+function safeName(name: string) {
   return name
-    .normalize("NFKD")
-    .replace(/[^\w.\- ]/g, "")
-    .replace(/\s+/g, "-")
-    .slice(0, 120);
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 150);
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     const form = await req.formData();
 
     const files = form
       .getAll("files")
-      .filter((value): value is File => value instanceof File);
+      .filter((item): item is File => item instanceof File);
 
     if (!files.length) {
       return NextResponse.json(
-        { error: "Tidak ada file yang dipilih." },
+        { error: "Tidak ada file yang dikirim." },
         { status: 400 }
       );
     }
 
     if (files.length > 10) {
       return NextResponse.json(
-        { error: "Maksimal 10 file sekali upload." },
+        { error: "Maksimal 10 file dalam satu upload." },
         { status: 400 }
       );
     }
 
-    const result: {
-      name: string;
-      url: string;
-      type: string;
-      size: number;
-    }[] = [];
+    const uploaded = [];
 
     for (const file of files) {
-      if (!file.size) {
+      if (file.size <= 0) {
         continue;
       }
 
-      if (file.size > MAX_FILE_SIZE) {
+      if (file.size > MAX_SIZE) {
         return NextResponse.json(
           {
-            error: `File "${file.name}" terlalu besar. Maksimal 25 MB.`,
+            error: `File "${file.name}" lebih besar dari 25 MB.`,
           },
           { status: 400 }
         );
       }
 
-      if (!ALLOWED_TYPES.has(file.type)) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
         return NextResponse.json(
           {
-            error: `Jenis file "${file.name}" tidak diperbolehkan.`,
+            error: `Format file "${file.name}" tidak diperbolehkan.`,
           },
           { status: 400 }
         );
       }
 
-      const filename = `${randomUUID()}-${safeFileName(file.name)}`;
+      const filename = safeName(file.name);
 
-      const blob = await put(`notaris/${filename}`, file, {
-        access: "public",
+      const pathname =
+        `akta/${new Date().getFullYear()}/` +
+        `${randomUUID()}-${filename}`;
+
+      const blob = await put(pathname, file, {
+        access: "private",
         addRandomSuffix: false,
       });
 
-      result.push({
+      uploaded.push({
         name: file.name,
         url: blob.url,
+        pathname: blob.pathname,
         type: file.type,
         size: file.size,
       });
@@ -99,10 +96,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      files: result,
+      files: uploaded,
     });
   } catch (error) {
-    console.error("UPLOAD ERROR:", error);
+    console.error("BLOB UPLOAD ERROR:", error);
 
     return NextResponse.json(
       {
@@ -110,7 +107,7 @@ export async function POST(req: NextRequest) {
         error:
           error instanceof Error
             ? error.message
-            : "Gagal mengupload file.",
+            : "Gagal mengupload file ke Vercel Blob.",
       },
       { status: 500 }
     );
