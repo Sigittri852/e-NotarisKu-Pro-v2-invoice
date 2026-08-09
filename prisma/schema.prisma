@@ -8,34 +8,38 @@ datasource db {
 }
 
 model Akta {
-  id              String    @id @default(cuid())
-  nomorAkta       String
-  tanggal         DateTime
-  kategori        String
-  jenisAkta       String
-  namaNotaris     String
-  namaPihak       String
-  nik             String?
-  npwp            String?
-  alamat          String?
-  nomorSertifikat String?
-  jenisHak        String?
-  luasTanah       Float?
-  nilaiTransaksi  Float     @default(0)
-  nopPbb          String?
-  njop            Float     @default(0)
-  tanggalSsp      DateTime?
-  sspPph          Float     @default(0)
-  tanggalBphtb    DateTime?
-  bphtb           Float     @default(0)
-  honorarium      Float     @default(0)
-  status          String    @default("Draft")
-  catatan         String?
-  detailJson      String    @default("{}")
-  pihakJson       String    @default("[]")
-  dokumenJson     String    @default("[]")
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                     String    @id @default(cuid())
+  nomorAkta              String
+  tanggal                DateTime
+  kategori               String
+  jenisAkta              String
+  namaNotaris            String
+  namaPihak              String
+  nik                    String?
+  npwp                   String?
+  alamat                 String?
+  nomorSertifikat        String?
+  jenisHak               String?
+  luasTanah              Float?
+  nilaiTransaksi         Float     @default(0)
+  nopPbb                 String?
+  njop                   Float     @default(0)
+  tanggalSsp             DateTime?
+  sspPph                 Float     @default(0)
+  tanggalBphtb           DateTime?
+  bphtb                  Float     @default(0)
+  honorarium             Float     @default(0)
+  status                 String    @default("Draft")
+  catatan                String?
+  detailJson             String    @default("{}")
+  pihakJson              String    @default("[]")
+  dokumenJson            String    @default("[]")
+  fotoTtdKlienJson       String    @default("[]")
+  fotoTtdNotarisJson     String    @default("[]")
+  minutaJson              String    @default("[]")
+  tandaTanganDigitalJson String    @default("[]")
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 }
 
 model Invoice {
@@ -51,22 +55,17 @@ model Invoice {
   pelanggan      String
   alamat         String?
   nik            String?
-
   items          String   @default("[]")
-
   nilaiTransaksi Float    @default(0)
-  njop           Float    @default(0)
-  sspPph         Float    @default(0)
+  njop            Float    @default(0)
+  sspPph          Float    @default(0)
   sspdBphtb      Float    @default(0)
-
   diskon         Float    @default(0)
   ppnPersen      Float    @default(0)
   ppn            Float    @default(0)
-
   status         String   @default("Belum Lunas")
   catatan        String?
   metodePembayaran String?
-
   createdAt      String
   updatedAt      DateTime @updatedAt
 }
