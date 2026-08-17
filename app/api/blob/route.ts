@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 const MAX_SIZE = 25 * 1024 * 1024;
 
-const ALLOWED_TYPES = [
+const ALLOWED_TYPES = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
@@ -18,27 +18,67 @@ const ALLOWED_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/zip",
   "application/x-zip-compressed",
-];
+]);
 
 function safeName(name: string) {
   return name
     .replace(/[^a-zA-Z0-9._-]/g, "-")
     .replace(/-+/g, "-")
-    .slice(0, 120);
+    .slice(0, 150);
 }
 
+/**
+ * GET
+ *
+ * Menampilkan file private dari Vercel Blob.
+ *
+ * Contoh:
+ * /api/blob?pathname=akta/2026/xxxx-ktp.jpg
+ */
 export async function GET(req: Request) {
   try {
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+
+    if (!token) {
+      console.error(
+        "[BLOB GET] BLOB_READ_WRITE_TOKEN tidak tersedia",
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "BLOB_READ_WRITE_TOKEN belum tersedia di Vercel.",
+        },
+        { status: 500 },
+      );
+    }
+
     const url = new URL(req.url);
+
     const pathname = url.searchParams.get("pathname");
 
     if (!pathname) {
       return NextResponse.json(
         {
           success: false,
-          error: "pathname wajib diisi.",
+          error: "Parameter pathname wajib diisi.",
         },
         { status: 400 },
+      );
+    }
+
+    /*
+     * Keamanan:
+     * hanya izinkan file di folder akta/
+     */
+    if (!pathname.startsWith("akta/")) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Path file tidak diperbolehkan.",
+        },
+        { status: 403 },
       );
     }
 
@@ -46,6 +86,7 @@ export async function GET(req: Request) {
 
     const result = await get(pathname, {
       access: "private",
+      token,
     });
 
     if (!result) {
@@ -58,22 +99,65 @@ export async function GET(req: Request) {
       );
     }
 
-    return new Response(result.stream, {
-      status: 200,
-      headers: {
-        "Content-Type":
-          result.blob.contentType ||
-          "application/octet-stream",
-        "Content-Length":
-          String(result.blob.size),
-        "Cache-Control":
-          "private, no-store, max-age=0",
-        "X-Content-Type-Options":
-          "nosniff",
+    const contentType =
+      result.blob?.contentType ||
+      "application/octet-stream";
+
+    const size = result.blob?.size;
+
+    const headers = new Headers();
+
+    headers.set("Content-Type", contentType);
+    headers.set(
+      "Cache-Control",
+      "private, no-store, max-age=0, must-revalidate",
+    );
+    headers.set(
+      "X-Content-Type-Options",
+      "nosniff",
+    );
+
+    if (
+      typeof size === "number" &&
+      Number.isFinite(size)
+    ) {
+      headers.set(
+        "Content-Length",
+        String(size),
+      );
+    }
+
+    /*
+     * inline:
+     * JPG/PNG/PDF bisa ditampilkan browser.
+     */
+    if (
+      contentType.startsWith("image/") ||
+      contentType === "application/pdf"
+    ) {
+      headers.set(
+        "Content-Disposition",
+        "inline",
+      );
+    } else {
+      headers.set(
+        "Content-Disposition",
+        "attachment",
+      );
+    }
+
+    return new Response(
+      result.stream,
+      {
+        status: 200,
+        headers,
       },
-    });
+    );
   } catch (error) {
-    console.error("[BLOB GET ERROR]", error);
+    console.error(
+      "[BLOB GET ERROR]",
+      error,
+    );
 
     return NextResponse.json(
       {
@@ -88,16 +172,29 @@ export async function GET(req: Request) {
   }
 }
 
+/**
+ * POST
+ *
+ * Upload file ke Vercel Blob private.
+ *
+ * FormData:
+ * files = File[]
+ */
 export async function POST(req: Request) {
   try {
     const token =
       process.env.BLOB_READ_WRITE_TOKEN;
 
     if (!token) {
+      console.error(
+        "[BLOB POST] BLOB_READ_WRITE_TOKEN tidak tersedia",
+      );
+
       return NextResponse.json(
         {
+          success: false,
           error:
-            "BLOB_READ_WRITE_TOKEN belum tersedia.",
+            "BLOB_READ_WRITE_TOKEN belum tersedia di Vercel.",
         },
         { status: 500 },
       );
@@ -116,8 +213,20 @@ export async function POST(req: Request) {
     if (!files.length) {
       return NextResponse.json(
         {
+          success: false,
           error:
             "Tidak ada file yang dikirim.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (files.length > 10) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Maksimal 10 file dalam satu upload.",
         },
         { status: 400 },
       );
@@ -127,23 +236,34 @@ export async function POST(req: Request) {
       namaFile: string;
       tipe: string;
       pathname: string;
+      url: string;
       size: number;
     }> = [];
 
     for (const file of files) {
+      if (file.size <= 0) {
+        continue;
+      }
+
       if (file.size > MAX_SIZE) {
         return NextResponse.json(
           {
-            error: `File ${file.name} melebihi batas 25 MB.`,
+            success: false,
+            error:
+              `File "${file.name}" ` +
+              `lebih besar dari 25 MB.`,
           },
           { status: 400 },
         );
       }
 
-      if (!ALLOWED_TYPES.includes(file.type)) {
+      if (!ALLOWED_TYPES.has(file.type)) {
         return NextResponse.json(
           {
-            error: `Jenis file ${file.name} tidak diperbolehkan.`,
+            success: false,
+            error:
+              `Format file "${file.name}" ` +
+              "tidak diperbolehkan.",
           },
           { status: 400 },
         );
@@ -153,7 +273,8 @@ export async function POST(req: Request) {
         `${randomUUID()}-${safeName(file.name)}`;
 
       const pathname =
-        `akta/${new Date().getFullYear()}/${filename}`;
+        `akta/${new Date().getFullYear()}/` +
+        filename;
 
       const blob = await put(
         pathname,
@@ -161,24 +282,56 @@ export async function POST(req: Request) {
         {
           access: "private",
           addRandomSuffix: false,
-          contentType: file.type,
+          contentType:
+            file.type ||
+            "application/octet-stream",
+          token,
         },
       );
+
+      /*
+       * Jangan kirim blob.url private
+       * langsung ke browser.
+       *
+       * Gunakan endpoint GET kita sendiri.
+       */
+      const previewUrl =
+        `/api/blob?pathname=${encodeURIComponent(
+          blob.pathname,
+        )}`;
 
       result.push({
         namaFile: file.name,
         tipe: file.type,
         pathname: blob.pathname,
+        url: previewUrl,
         size: file.size,
       });
     }
 
-    return NextResponse.json({
-      success: true,
-      files: result,
-    });
+    if (!result.length) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Tidak ada file yang valid.",
+        },
+        { status: 400 },
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        files: result,
+      },
+      { status: 200 },
+    );
   } catch (error) {
-    console.error("[BLOB POST ERROR]", error);
+    console.error(
+      "[BLOB POST ERROR]",
+      error,
+    );
 
     return NextResponse.json(
       {
