@@ -20,7 +20,6 @@ export type PihakAkta = {
   scanIdentitas?: Dokumen[];
 };
 
-/** Tanda tangan digital notaris/pihak yang digambar langsung (canvas -> PNG dataURL). */
 export type TandaTanganDigital = {
   nama: string;
   peran: string;
@@ -36,10 +35,8 @@ export type Akta = {
   jenisAkta: string;
   namaNotaris: string;
 
-  /** Data baru: maksimal 6 pihak. */
   pihak: PihakAkta[];
 
-  /** Field lama dipertahankan agar data lama dan template lama tetap kompatibel. */
   namaPihak: string;
   nik: string;
   npwp: string;
@@ -68,13 +65,10 @@ export type Akta = {
 
   dokumen: Dokumen[];
 
-  /** Foto dokumentasi saat proses tanda tangan berlangsung. */
   fotoTtdKlien: Dokumen[];
   fotoTtdNotaris: Dokumen[];
 
-  /** Berkas minuta akta. */
   minuta: Dokumen[];
 
-  /** Tanda tangan digital. */
   tandaTanganDigital: TandaTanganDigital[];
 };

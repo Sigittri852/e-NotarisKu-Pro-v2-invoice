@@ -1,4 +1,4 @@
-import { get, put } from "@vercel/blob";
+import { del, get, put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 
@@ -27,23 +27,44 @@ function safeName(name: string) {
     .slice(0, 150);
 }
 
-/**
+function getToken() {
+  return process.env.BLOB_READ_WRITE_TOKEN || "";
+}
+
+function pathnameFromUrl(value: string) {
+  if (!value) return "";
+
+  try {
+    const parsed = new URL(value);
+
+    if (
+      !parsed.hostname.endsWith(
+        ".private.blob.vercel-storage.com",
+      )
+    ) {
+      return "";
+    }
+
+    return decodeURIComponent(
+      parsed.pathname.replace(/^\/+/, ""),
+    );
+  } catch {
+    return "";
+  }
+}
+
+/* =========================================================
  * GET
- *
- * Menampilkan file private dari Vercel Blob.
+ * Membaca file private Blob melalui server.
  *
  * Contoh:
  * /api/blob?pathname=akta/2026/xxxx-ktp.jpg
- */
+ * =======================================================*/
 export async function GET(req: Request) {
   try {
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    const token = getToken();
 
     if (!token) {
-      console.error(
-        "[BLOB GET] BLOB_READ_WRITE_TOKEN tidak tersedia",
-      );
-
       return NextResponse.json(
         {
           success: false,
@@ -55,34 +76,30 @@ export async function GET(req: Request) {
     }
 
     const url = new URL(req.url);
-
-    const pathname = url.searchParams.get("pathname");
+    const pathname =
+      url.searchParams.get("pathname") || "";
 
     if (!pathname) {
       return NextResponse.json(
         {
           success: false,
-          error: "Parameter pathname wajib diisi.",
+          error:
+            "Parameter pathname wajib diisi.",
         },
         { status: 400 },
       );
     }
 
-    /*
-     * Keamanan:
-     * hanya izinkan file di folder akta/
-     */
     if (!pathname.startsWith("akta/")) {
       return NextResponse.json(
         {
           success: false,
-          error: "Path file tidak diperbolehkan.",
+          error:
+            "Path file tidak diperbolehkan.",
         },
         { status: 403 },
       );
     }
-
-    console.log("[BLOB GET]", pathname);
 
     const result = await get(pathname, {
       access: "private",
@@ -103,34 +120,33 @@ export async function GET(req: Request) {
       result.blob?.contentType ||
       "application/octet-stream";
 
-    const size = result.blob?.size;
-
     const headers = new Headers();
 
-    headers.set("Content-Type", contentType);
+    headers.set(
+      "Content-Type",
+      contentType,
+    );
+
     headers.set(
       "Cache-Control",
       "private, no-store, max-age=0, must-revalidate",
     );
+
     headers.set(
       "X-Content-Type-Options",
       "nosniff",
     );
 
     if (
-      typeof size === "number" &&
-      Number.isFinite(size)
+      typeof result.blob?.size === "number" &&
+      Number.isFinite(result.blob.size)
     ) {
       headers.set(
         "Content-Length",
-        String(size),
+        String(result.blob.size),
       );
     }
 
-    /*
-     * inline:
-     * JPG/PNG/PDF bisa ditampilkan browser.
-     */
     if (
       contentType.startsWith("image/") ||
       contentType === "application/pdf"
@@ -172,24 +188,15 @@ export async function GET(req: Request) {
   }
 }
 
-/**
+/* =========================================================
  * POST
- *
  * Upload file ke Vercel Blob private.
- *
- * FormData:
- * files = File[]
- */
+ * =======================================================*/
 export async function POST(req: Request) {
   try {
-    const token =
-      process.env.BLOB_READ_WRITE_TOKEN;
+    const token = getToken();
 
     if (!token) {
-      console.error(
-        "[BLOB POST] BLOB_READ_WRITE_TOKEN tidak tersedia",
-      );
-
       return NextResponse.json(
         {
           success: false,
@@ -234,7 +241,9 @@ export async function POST(req: Request) {
 
     const result: Array<{
       namaFile: string;
+      name: string;
       tipe: string;
+      type: string;
       pathname: string;
       url: string;
       size: number;
@@ -251,7 +260,7 @@ export async function POST(req: Request) {
             success: false,
             error:
               `File "${file.name}" ` +
-              `lebih besar dari 25 MB.`,
+              "melebihi batas 25 MB.",
           },
           { status: 400 },
         );
@@ -270,7 +279,9 @@ export async function POST(req: Request) {
       }
 
       const filename =
-        `${randomUUID()}-${safeName(file.name)}`;
+        `${randomUUID()}-${safeName(
+          file.name,
+        )}`;
 
       const pathname =
         `akta/${new Date().getFullYear()}/` +
@@ -292,8 +303,6 @@ export async function POST(req: Request) {
       /*
        * Jangan kirim blob.url private
        * langsung ke browser.
-       *
-       * Gunakan endpoint GET kita sendiri.
        */
       const previewUrl =
         `/api/blob?pathname=${encodeURIComponent(
@@ -302,7 +311,9 @@ export async function POST(req: Request) {
 
       result.push({
         namaFile: file.name,
+        name: file.name,
         tipe: file.type,
+        type: file.type,
         pathname: blob.pathname,
         url: previewUrl,
         size: file.size,
@@ -340,6 +351,92 @@ export async function POST(req: Request) {
           error instanceof Error
             ? error.message
             : "Upload gagal.",
+      },
+      { status: 500 },
+    );
+  }
+}
+
+/* =========================================================
+ * DELETE
+ * Menghapus file fisik dari Vercel Blob.
+ *
+ * Bisa:
+ * /api/blob?pathname=akta/2026/...
+ *
+ * atau:
+ * /api/blob?url=https://...private.blob...
+ * =======================================================*/
+export async function DELETE(req: Request) {
+  try {
+    const token = getToken();
+
+    if (!token) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "BLOB_READ_WRITE_TOKEN belum tersedia di Vercel.",
+        },
+        { status: 500 },
+      );
+    }
+
+    const url = new URL(req.url);
+
+    const pathnameParam =
+      url.searchParams.get("pathname") || "";
+
+    const blobUrl =
+      url.searchParams.get("url") || "";
+
+    const pathname =
+      pathnameParam ||
+      pathnameFromUrl(blobUrl);
+
+    if (!pathname) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "pathname atau url dokumen wajib diisi.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (!pathname.startsWith("akta/")) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Path file tidak diperbolehkan.",
+        },
+        { status: 403 },
+      );
+    }
+
+    await del(pathname, {
+      token,
+    });
+
+    return NextResponse.json({
+      success: true,
+      pathname,
+    });
+  } catch (error) {
+    console.error(
+      "[BLOB DELETE ERROR]",
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Gagal menghapus file Blob.",
       },
       { status: 500 },
     );
