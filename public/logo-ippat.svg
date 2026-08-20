@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#f4dc63"/><stop offset="1" stop-color="#b98b24"/></linearGradient></defs>
+<circle cx="100" cy="100" r="94" fill="#f4d64e" stroke="#13264b" stroke-width="5"/>
+<circle cx="100" cy="100" r="77" fill="#0b8a55" stroke="#13264b" stroke-width="3"/>
+<text x="100" y="31" text-anchor="middle" font-family="Arial" font-size="13" font-weight="700" fill="#13264b">IPPAT INDONESIA</text>
+<text x="100" y="174" text-anchor="middle" font-family="Arial" font-size="13" font-weight="700" fill="#13264b">PEJABAT PEMBUAT AKTA TANAH</text>
+<circle cx="100" cy="101" r="42" fill="#f7f7f0" stroke="#fff" stroke-width="3"/>
+<g fill="none" stroke="#0b8a55" stroke-width="5">
+<circle cx="100" cy="101" r="29"/>
+<path d="M73 101h54M100 74v54"/>
+</g>
+<text x="100" y="108" text-anchor="middle" font-family="Arial" font-size="18" font-weight="900" fill="#13264b">IPPAT</text>
+</svg>

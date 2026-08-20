@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#f6d46b"/><stop offset="1" stop-color="#c7962c"/></linearGradient></defs>
+<circle cx="100" cy="100" r="94" fill="#f4c84b" stroke="#13264b" stroke-width="5"/>
+<circle cx="100" cy="100" r="76" fill="#c81925" stroke="#13264b" stroke-width="3"/>
+<text x="100" y="31" text-anchor="middle" font-family="Arial" font-size="15" font-weight="700" fill="#13264b">IKATAN NOTARIS</text>
+<text x="100" y="174" text-anchor="middle" font-family="Arial" font-size="15" font-weight="700" fill="#13264b">INDONESIA</text>
+<g fill="url(#g)" stroke="#fff" stroke-width="2">
+<path d="M100 57 L112 72 L108 126 L92 126 L88 72 Z"/>
+<circle cx="100" cy="53" r="11"/>
+<path d="M72 79 H128 V85 H72z"/>
+<path d="M58 92 H142 L134 101 H66z"/>
+<path d="M48 106 H82 V112 H48zM118 106 H152 V112 H118z"/>
+<path d="M61 113 L48 135 H74zM139 113 L126 135 H152z"/>
+</g><text x="100" y="101" text-anchor="middle" font-family="Arial" font-size="18" font-weight="900" fill="#13264b">INI</text>
+</svg>
