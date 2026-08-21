@@ -3,28 +3,7 @@ import { jsPDF } from "jspdf";
 import { getInvoice } from "@/lib/invoice-store";
 import { invoiceSubtotal, invoicePpn, invoiceTotal } from "@/lib/invoice";
 import { rupiah } from "@/lib/constants";
-
-const OFFICE = {
-  address: "Perumahan Puri Kosambi 1 Blok N Nomor 8, Klari - Karawang, Jawa Barat 41371",
-  phone: "(0267) 8642922, (0813) 388958126",
-  email: "sitorusapriani@gmail.com",
-};
-
-function displayDate(value: string) {
-  if (!value) return "-";
-  const d = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return value;
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(d);
-}
-
-function displayNotaris(value?: string) {
-  const name = (value || "APRIANI, S.H., M.Kn.").trim();
-  return name.toUpperCase().startsWith("PPAT ") ? name.slice(5) : name;
-}
+import { OFFICE, displayDate, displayNotaris } from "@/lib/invoice-template";
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -39,54 +18,59 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 40;
+  const margin = 36;
   const contentWidth = pageWidth - margin * 2;
-  let y = 42;
+  let y = 36;
+  const logoSize = 52;
+  const logoGap = 14;
+  const leftLogoX = margin + 8;
+  const secondLogoX = leftLogoX + logoSize + logoGap;
 
-  // Dua emblem bergaya kop kantor.
-  doc.setFillColor(244, 200, 75);
-  doc.setDrawColor(19, 38, 75);
-  doc.setLineWidth(2);
-  doc.circle(margin + 28, y + 27, 25, "FD");
-  doc.setFillColor(200, 25, 37);
-  doc.circle(margin + 28, y + 27, 19, "F");
-  doc.setFillColor(244, 214, 78);
-  doc.circle(margin + 28, y + 27, 8, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
-  doc.text("INI", margin + 28, y + 29, { align: "center" });
+  const getAssetPng = async (path: string) => {
+    const assetUrl = new URL(path, _.url).toString();
+    const res = await fetch(assetUrl);
+    if (!res.ok) throw new Error(`Gagal memuat asset ${path}`);
+    const svg = await res.text();
+    const match = svg.match(/<image[^>]+href="data:image\/png;base64,([^"]+)"/);
+    if (!match) throw new Error(`Format asset tidak didukung ${path}`);
+    return `data:image/png;base64,${match[1]}`;
+  };
 
-  doc.setFillColor(244, 214, 78);
-  doc.setDrawColor(19, 38, 75);
-  doc.circle(margin + 88, y + 27, 25, "FD");
-  doc.setFillColor(11, 138, 85);
-  doc.circle(margin + 88, y + 27, 19, "F");
-  doc.setFillColor(247, 247, 240);
-  doc.circle(margin + 88, y + 27, 13, "F");
-  doc.setTextColor(19, 38, 75);
-  doc.setFontSize(6.5);
-  doc.text("IPPAT", margin + 88, y + 29, { align: "center" });
+  const addLogo = async (src: string, x: number, yPos: number, size: number) => {
+    try {
+      const pngData = await getAssetPng(src);
+      doc.addImage(pngData, "PNG", x, yPos, size, size);
+    } catch {
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(x, yPos, size, size, 8, 8, "F");
+      doc.setTextColor(19, 38, 75);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.text(src.includes("ippat") ? "IPPAT" : "INI", x + size / 2, yPos + size / 2 + 2, { align: "center" });
+    }
+  };
 
-  const officeX = margin + 122;
+  await addLogo("/logo-ini.svg", leftLogoX, y + 3, logoSize);
+  await addLogo("/logo-ippat.svg", secondLogoX, y + 3, logoSize);
+
+  const officeX = margin + 160;
   doc.setTextColor(19, 38, 75);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(21);
-  doc.text("KANTOR NOTARIS", officeX, y + 20);
+  doc.text("KANTOR NOTARIS", officeX, y + 24);
   doc.setFontSize(18);
-  doc.text(`PPAT ${namaPejabat}`, officeX, y + 44);
+  doc.text(`PPAT ${namaPejabat}`, officeX, y + 50);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(39, 55, 83);
-  const addressLines = doc.splitTextToSize(OFFICE.address, 350);
+  const addressLines = doc.splitTextToSize(OFFICE.address, 330);
   doc.text(addressLines, officeX, y + 62);
   let contactY = y + 62 + addressLines.length * 10;
-  doc.text(`Telepon ${OFFICE.phone}`, officeX, contactY);
-  doc.text(`Email : ${OFFICE.email}`, officeX, contactY + 11);
+  doc.text(`Telepon: ${OFFICE.phone}`, officeX, contactY);
+  doc.text(`Email: ${OFFICE.email}`, officeX, contactY + 12);
 
-  // Metadata invoice.
-  const rightX = pageWidth - margin;
+  const rightX = pageWidth - margin + 2;
   let ry = y + 8;
   const rightRow = (label: string, value: string) => {
     doc.setFont("helvetica", "normal");
@@ -104,12 +88,11 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   rightRow("TANGGAL", displayDate(x.tanggal));
   rightRow("JATUH TEMPO", displayDate(x.jatuhTempo));
 
-  y = Math.max(contactY + 15, ry + 3);
+  y = Math.max(contactY + 18, ry + 8);
   doc.setDrawColor(7, 93, 229);
-  doc.setLineWidth(2.5);
+  doc.setLineWidth(2.2);
   doc.line(margin, y, rightX, y);
 
-  // Meta.
   y += 26;
   const half = contentWidth / 2;
   doc.setFont("helvetica", "bold");
@@ -144,53 +127,51 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   if (adaDataPajak) {
     y += 20;
     doc.setFillColor(245, 248, 253);
-    doc.rect(margin, y, contentWidth, 48, "F");
+    doc.roundedRect(margin, y, contentWidth, 48, 6, 6, "F");
     const w = contentWidth / 4;
     const refRow = (i: number, label: string, value: number) => {
-      const cx = margin + 12 + i * w;
+      const cx = margin + 14 + i * w;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7.5);
       doc.setTextColor(53, 82, 126);
-      doc.text(label, cx, y + 17);
+      doc.text(label, cx, y + 16);
       doc.setFontSize(10.5);
       doc.setTextColor(19, 38, 75);
-      doc.text(rupiah(value), cx, y + 34);
+      doc.text(rupiah(value), cx, y + 33);
     };
     refRow(0, "NILAI TRANSAKSI", x.nilaiTransaksi || 0);
     refRow(1, "NJOP PBB", x.njop || 0);
     refRow(2, "SSP PPh", x.sspPph || 0);
     refRow(3, "SSPD BPHTB", x.sspdBphtb || 0);
-    y += 48;
+    y += 52;
   }
 
-  // Tabel.
-  y += 24;
+  y += 18;
   const tableX = margin;
   const tableW = contentWidth;
   const rowH = 24;
   doc.setFillColor(7, 93, 229);
   doc.rect(tableX, y, tableW, rowH, "F");
-  const cols = [0, 34, tableW - 150, tableW - 92, tableW];
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
-  doc.text("NO", tableX + 6, y + 16);
-  doc.text("URAIAN", tableX + 44, y + 16);
-  doc.text("QTY", tableX + cols[2] - 8, y + 16, { align: "right" });
-  doc.text("HARGA", tableX + cols[3] - 8, y + 16, { align: "right" });
-  doc.text("JUMLAH", tableX + cols[4] - 8, y + 16, { align: "right" });
+  doc.text("NO", tableX + 10, y + 16);
+  doc.text("URAIAN", tableX + 50, y + 16);
+  doc.text("QTY", tableX + tableW - 178, y + 16, { align: "right" });
+  doc.text("HARGA", tableX + tableW - 112, y + 16, { align: "right" });
+  doc.text("JUMLAH", tableX + tableW - 25, y + 16, { align: "right" });
   y += rowH;
 
   const drawRow = (no: number, description: string, qty: number, price: number) => {
     doc.setTextColor(19, 38, 75);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.text(String(no), tableX + 6, y + 16);
-    const desc = doc.splitTextToSize(description || "-", tableW - 250);
-    doc.text(desc.slice(0, 2), tableX + 44, y + 16);
-    doc.text(String(qty), tableX + cols[2] - 8, y + 16, { align: "right" });
-    doc.text(rupiah(price), tableX + cols[3] - 8, y + 16, { align: "right" });
-    doc.text(rupiah((qty || 0) * (price || 0)), tableX + cols[4] - 8, y + 16, { align: "right" });
+    doc.text(String(no), tableX + 10, y + 16);
+    const desc = doc.splitTextToSize(description || "-", tableW - 240);
+    doc.text(desc.slice(0, 2), tableX + 50, y + 16);
+    doc.text(String(qty), tableX + tableW - 178, y + 16, { align: "right" });
+    doc.text(rupiah(price), tableX + tableW - 112, y + 16, { align: "right" });
+    doc.text(rupiah((qty || 0) * (price || 0)), tableX + tableW - 25, y + 16, { align: "right" });
     doc.setDrawColor(219, 229, 242);
     doc.line(tableX, y + rowH, tableX + tableW, y + rowH);
     y += rowH;
@@ -207,18 +188,16 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     drawRow(no, "Pajak SSPD (BPHTB)", 1, x.sspdBphtb || 0);
   }
 
-  // Ringkasan.
-  y += 22;
-  const totalsX = margin + half + 20;
-  const totalRight = rightX;
+  y += 18;
+  const totalsX = margin + 280;
   let ty = y;
   const totalLine = (label: string, value: string, big = false) => {
     doc.setFont("helvetica", big ? "bold" : "normal");
-    doc.setFontSize(big ? 15 : 10);
+    doc.setFontSize(big ? 15 : 9.5);
     doc.setTextColor(19, 38, 75);
     doc.text(label, totalsX, ty);
-    doc.text(value, totalRight, ty, { align: "right" });
-    ty += big ? 23 : 17;
+    doc.text(value, rightX, ty, { align: "right" });
+    ty += big ? 22 : 16;
   };
 
   doc.setFont("helvetica", "bold");
@@ -228,7 +207,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(39, 55, 83);
-  const noteLines = doc.splitTextToSize(x.catatan || "Terima kasih atas kepercayaan Anda.", half - 25);
+  const noteLines = doc.splitTextToSize(x.catatan || "Terima kasih atas kepercayaan Anda.", 200);
   doc.text(noteLines, margin, y + 14);
   doc.setFont("helvetica", "bold");
   doc.text("METODE PEMBAYARAN", margin, y + 42 + noteLines.length * 10);
@@ -239,18 +218,17 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   totalLine("DISKON", "- " + rupiah(x.diskon));
   totalLine(`PPN (${x.ppnPersen || 0}%)`, rupiah(ppnNominal));
   doc.setDrawColor(7, 93, 229);
-  doc.setLineWidth(1.5);
-  doc.line(totalsX, ty, totalRight, ty);
+  doc.setLineWidth(1.3);
+  doc.line(totalsX, ty, rightX, ty);
   ty += 18;
   totalLine("TOTAL", rupiah(total), true);
 
-  // Tanda tangan.
-  const footerY = Math.min(pageHeight - 52, Math.max(ty + 55, pageHeight - 95));
+  const footerY = Math.min(pageHeight - 58, Math.max(ty + 55, pageHeight - 90));
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(39, 55, 83);
   doc.text("Terima kasih atas kepercayaan Anda.", margin, footerY);
-  doc.text("Hormat kami,", rightX, footerY - 30, { align: "right" });
+  doc.text("Hormat kami,", rightX, footerY - 28, { align: "right" });
   doc.setDrawColor(19, 38, 75);
   doc.setLineWidth(0.8);
   doc.line(rightX - 170, footerY + 3, rightX, footerY + 3);

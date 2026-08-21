@@ -7,30 +7,9 @@ import InvoiceDeleteButton from "@/components/InvoiceDeleteButton";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { OFFICE, displayDate, displayNotaris } from "@/lib/invoice-template";
 
 export const dynamic = "force-dynamic";
-
-const OFFICE = {
-  address: "Perumahan Puri Kosambi 1 Blok N Nomor 8, Klari - Karawang, Jawa Barat 41371",
-  phone: "(0267) 8642922, (0813) 388958126",
-  email: "sitorusapriani@gmail.com",
-};
-
-function displayDate(value: string) {
-  if (!value) return "-";
-  const d = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return value;
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(d);
-}
-
-function displayNotaris(value?: string) {
-  const name = (value || "APRIANI, S.H., M.Kn.").trim();
-  return name.toUpperCase().startsWith("PPAT ") ? name.slice(5) : name;
-}
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
